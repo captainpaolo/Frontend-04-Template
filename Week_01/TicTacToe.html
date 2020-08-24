@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <style>
+        #board {
+            width: 300px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #board .cell {
+            height: 100px;
+            width: 100px;
+            background: green;
+            border: 1px solid black;
+            line-height: 100px;
+            text-align: center;
+            font-size: 40px;
+            font-weight: bold;
+            color: red;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+    </style>
+    <div id='board'></div>
+    <script>
+        let chase = [0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        ];
+        const COLOR_EMPTY = 0;
+        const COLOR_O = 1;
+        const COLOR_X = 2;
+        const PIECE = {
+            0: ' ',
+            1: 'O',
+            2: 'X'
+        }
+        let curColor = COLOR_O;
+
+        function show(chase) {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                for (let j = i * 3; j < i * 3 + 3; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = PIECE[chase[j]]
+                    board.appendChild(cell);
+                    cell.addEventListener('click', () => {
+                        if (chase[j] !== COLOR_EMPTY) {
+                            alert('此处已经被其他棋子占据！！');
+                            return;
+                        }
+                        chase[j] = curColor;
+                        show(chase);
+                        if (checkWin(chase, j)) {
+                            alert(PIECE[curColor] + ' win!');
+                        } else {
+                            curColor = 3 - curColor;
+                            // willWin(chase, curColor);
+                            const point = bestChoise(chase, curColor).point;
+                            if (point != null) {
+                                console.log('point', point);
+                                chase[point] = curColor;
+                                curColor = 3 - curColor;
+                                show(chase);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        function checkWin(chase, point) {
+            const y = point % 3;
+            const x = (point - y) / 3;
+
+            if (chase[x * 3] === chase[x * 3 + 1] && chase[x * 3 + 1] === chase[x * 3 + 2]) {
+                // 横
+                return true;
+            }
+            if (chase[y] === chase[3 + y] && chase[3 + y] === chase[3 * 2 + y]) {
+                // 竖
+                return true;
+            }
+            if (x === y && chase[0] === chase[4] && chase[4] === chase[8]) {
+                // 对角线
+                return true;
+            }
+            if (x + y == 2 && chase[2] === chase[4] && chase[4] === chase[6]) {
+                // 对角线
+                return true;
+            }
+            return false;
+        }
+
+        function willWin(chase, color) {
+            const copyChase = Object.create(chase);
+            for (let i = 0; i < 3; i++) {
+                for (let j = i * 3; j < i * 3 + 3; j++) {
+                    if (copyChase[j] === COLOR_EMPTY) {
+                        copyChase[j] = color;
+                        if (checkWin(copyChase, j)) {
+                            console.log(PIECE[curColor] + ' will win next step ' + [i, j - i * 3]);
+                            return j;
+                        } else {
+                            copyChase[j] = COLOR_EMPTY;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function bestChoise(chase, color) {
+            let p = willWin(chase, color);
+            if (p !== null) {
+                return {
+                    point: p,
+                    result: 1
+                }
+            }
+            let point = null;
+            let result = -2;
+            for (let i = 0; i < 3; i++) {
+                for (let j = i * 3; j < i * 3 + 3; j++) {
+                    if (chase[j] === COLOR_EMPTY) {
+                        const copy_chase = Object.create(chase);
+                        copy_chase[j] = color;
+                        // ??
+                        const r = bestChoise(copy_chase, 3 - color).result;
+                        if (-r > result) {
+                            result = -r;
+                            point = j
+                        }
+                    }
+                }
+            }
+            return {
+                point: point,
+                result: point ? result : 0
+            }
+        }
+
+        show(chase);
+    </script>
+</body>
+
+</html>
