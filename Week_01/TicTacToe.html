@@ -38,6 +38,7 @@
             2: 'X'
         }
         let curColor = COLOR_O;
+        let finish = false;
 
         function show(chase) {
             const board = document.getElementById('board');
@@ -49,14 +50,18 @@
                     cell.textContent = PIECE[chase[j]]
                     board.appendChild(cell);
                     cell.addEventListener('click', () => {
+                        if (finish) {
+                            return;
+                        }
                         if (chase[j] !== COLOR_EMPTY) {
-                            alert('此处已经被其他棋子占据！！');
+                            delayAlert('此处已经被其他棋子占据！！');
                             return;
                         }
                         chase[j] = curColor;
                         show(chase);
                         if (checkWin(chase, j)) {
-                            alert(PIECE[curColor] + ' win!');
+                            finish = true;
+                            delayAlert(PIECE[curColor] + ' win!');
                         } else {
                             curColor = 3 - curColor;
                             // willWin(chase, curColor);
@@ -64,13 +69,29 @@
                             if (point != null) {
                                 console.log('point', point);
                                 chase[point] = curColor;
+                                if (checkWin(chase, point)) {
+                                    finish = true;
+                                    delayAlert(PIECE[curColor] + ' win!');
+                                }
                                 curColor = 3 - curColor;
-                                show(chase);
+                                delayShow(chase);
                             }
                         }
                     });
                 }
             }
+        }
+
+        function delayAlert(msg) {
+            setTimeout(() => {
+                alert(msg);
+            }, 800);
+        }
+
+        function delayShow(chase) {
+            setTimeout(() => {
+                show(chase);
+            }, 500)
         }
 
         function checkWin(chase, point) {
