@@ -39,22 +39,24 @@
         }
         let curColor = COLOR_O;
         let finish = false;
+        const CHASE_WIDTH = 3;
+        const  WIN_COUNT = 3;
 
-        function show(chase) {
-            const board = document.getElementById('board');
-            board.innerHTML = '';
-            for (let i = 0; i < 3; i++) {
-                for (let j = i * 3; j < i * 3 + 3; j++) {
+        // 初始化棋盘，注册点击事件
+        function initChase(chase) {
+            for (let i = 0; i < CHASE_WIDTH; i++) {
+                for (let j = i * CHASE_WIDTH; j < (i + 1) * CHASE_WIDTH ; j++) {
                     const cell = document.createElement('div');
+                    chase[j] = COLOR_EMPTY;
                     cell.className = 'cell';
-                    cell.textContent = PIECE[chase[j]]
+                    cell.textContent = '';
                     board.appendChild(cell);
                     cell.addEventListener('click', () => {
                         if (finish) {
                             return;
                         }
                         if (chase[j] !== COLOR_EMPTY) {
-                            delayAlert('此处已经被其他棋子占据！！');
+                            delayAlert('Not allow to place chase here!!');
                             return;
                         }
                         chase[j] = curColor;
@@ -63,9 +65,9 @@
                             finish = true;
                             delayAlert(PIECE[curColor] + ' win!');
                         } else {
-                            curColor = 3 - curColor;
-                            // willWin(chase, curColor);
-                            const point = bestChoise(chase, curColor).point;
+                            curColor = COLOR_O + COLOR_X - curColor;
+                            willWin(chase, curColor);
+                            const point = bestChoise(chase, curColor, 100).point;
                             if (point != null) {
                                 console.log('point', point);
                                 chase[point] = curColor;
@@ -73,7 +75,7 @@
                                     finish = true;
                                     delayAlert(PIECE[curColor] + ' win!');
                                 }
-                                curColor = 3 - curColor;
+                                curColor = COLOR_O + COLOR_X - curColor;
                                 delayShow(chase);
                             }
                         }
@@ -81,6 +83,17 @@
                 }
             }
         }
+
+        // 更新棋盘
+        function show(chase) {
+            for (let i = 0; i < CHASE_WIDTH; i++) {
+                for (let j = i * CHASE_WIDTH; j < (i + 1) * CHASE_WIDTH; j++) {
+                    const cell = board.children[j];
+                    cell.textContent = PIECE[chase[j]]
+                }
+            }
+        }
+
 
         function delayAlert(msg) {
             setTimeout(() => {
@@ -95,26 +108,136 @@
         }
 
         function checkWin(chase, point) {
-            const y = point % 3;
-            const x = (point - y) / 3;
-
-            if (chase[x * 3] === chase[x * 3 + 1] && chase[x * 3 + 1] === chase[x * 3 + 2]) {
-                // 横
+            if(checkWinRow(chase,point) >= WIN_COUNT) {
                 return true;
             }
-            if (chase[y] === chase[3 + y] && chase[3 + y] === chase[3 * 2 + y]) {
-                // 竖
+            else if(checkWinColumn(chase,point) >= WIN_COUNT) {
                 return true;
             }
-            if (x === y && chase[0] === chase[4] && chase[4] === chase[8]) {
-                // 对角线
+            else if(checkWinLeft(chase,point) >= WIN_COUNT) {
                 return true;
             }
-            if (x + y == 2 && chase[2] === chase[4] && chase[4] === chase[6]) {
-                // 对角线
+            else if(checkWinRight(chase,point) >= WIN_COUNT) {
                 return true;
             }
             return false;
+        }
+
+        function checkWinRow(chase, point) {
+            // 检查横向是否获胜
+            const color = chase[point];
+            const y = point % CHASE_WIDTH;
+            const x = (point - y) / CHASE_WIDTH;
+            let count = 1;
+            let tmpY = y - 1;
+            while(tmpY >=0) {
+                if(chase[x * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpY--;
+
+                } else {
+                    break;
+                }
+            }
+            tmpY = y + 1;
+            while(tmpY < CHASE_WIDTH) {
+                if(chase[x * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpY++;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function checkWinColumn(chase, point) {
+            // 检查纵向是否获胜
+            const color = chase[point];
+            const y = point % CHASE_WIDTH;
+            const x = (point - y) / CHASE_WIDTH;
+            let count = 1;
+            let tmpX = x - 1;
+            while(tmpX >=0) {
+                if(chase[tmpX * CHASE_WIDTH + y] === color) {
+                    count++ ;
+                    tmpX--;
+                } else {
+                    break;
+                }
+            }
+            tmpX = x + 1;
+            while(tmpX < CHASE_WIDTH) {
+                if(chase[tmpX * CHASE_WIDTH + y] === color) {
+                    count++ ;
+                    tmpX++;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function checkWinLeft(chase, point) {
+            // 检查左上到右下是否获胜
+            const color = chase[point];
+            const y = point % CHASE_WIDTH;
+            const x = (point - y) / CHASE_WIDTH;
+            let count = 1;
+            let tmpX = x - 1;
+            let tmpY = y - 1;
+            while(tmpX >=0 && tmpY >=0) {
+                if(chase[tmpX * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpX--;
+                    tmpY--;
+                } else {
+                    break;
+                }
+            }
+            tmpX = x + 1;
+            tmpY = y + 1;
+            while(tmpX < CHASE_WIDTH && tmpY < CHASE_WIDTH) {
+                if(chase[tmpX * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpX++;
+                    tmpY++;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function checkWinRight(chase, point) {
+            // 检查右上到左下是否获胜
+            const color = chase[point];
+            const y = point % CHASE_WIDTH;
+            const x = (point - y) / CHASE_WIDTH;
+            let count = 1;
+            let tmpX = x + 1;
+            let tmpY = y - 1;
+            while(tmpX < CHASE_WIDTH && tmpY >= 0) {
+                if(chase[tmpX * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpX++;
+                    tmpY--;
+                } else {
+                    break;
+                }
+            }
+            tmpX = x - 1;
+            tmpY = y + 1;
+            while(tmpX >= 0 && tmpY < CHASE_WIDTH) {
+                if(chase[tmpX * CHASE_WIDTH + tmpY] === color) {
+                    count++ ;
+                    tmpX--;
+                    tmpY++;
+                } else {
+                    break;
+                }
+            }
+            return count;
         }
 
         function willWin(chase, color) {
@@ -165,7 +288,7 @@
             }
         }
 
-        show(chase);
+        initChase(chase);
     </script>
 </body>
 
