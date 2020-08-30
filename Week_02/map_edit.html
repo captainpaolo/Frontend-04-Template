@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <style>
+        #container {
+            width: 1000px;
+            display: flex;
+            flex-wrap: wrap;
+            border: 1px solid black;
+        }
+
+        #container .block {
+            height: 10px;
+            width: 10px;
+            border: 1px solid black;
+            line-height: 5px;
+            text-align: center;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+    </style>
+    <div id="container"></div>
+    <button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+    <script>
+        const MAP_LENGTH = 100;
+        let MOUSE_DOWN = false;
+        let CLEAR = false;
+        let map = [];
+        let queue = [];
+        let container;
+
+        function init() {
+            container = document.getElementById('container');
+            let mapString = localStorage['map'];
+            map = mapString ? JSON.parse(mapString) : Array(MAP_LENGTH * MAP_LENGTH).fill(0);
+            for (let i = 0; i < MAP_LENGTH; i++) {
+                for (let j = i * MAP_LENGTH; j < (i + 1) * MAP_LENGTH; j++) {
+                    let block = document.createElement('div');
+                    block.className = 'block';
+                    if (map[j] == 0) {
+                        block.style.backgroundColor = 'white';
+                    } else {
+                        block.style.backgroundColor = 'gray';
+                    }
+                    container.appendChild(block);
+                    block.addEventListener('mousemove', function () {
+                        if (!MOUSE_DOWN) {
+                            return;
+                        }
+                        if (CLEAR) {
+                            block.style.backgroundColor = 'white';
+                            map[j] = 0;
+                        } else {
+                            block.style.backgroundColor = 'gray';
+                            map[j] = 1;
+                        }
+                    });
+                }
+            }
+            document.addEventListener('mousedown', function (e) {
+                MOUSE_DOWN = true;
+                CLEAR = e.which === 3;
+            });
+            document.addEventListener('mouseup', function () {
+                MOUSE_DOWN = false;
+            });
+            document.addEventListener('contextmenu', function (e) {
+                e.preventDefault();
+            });
+        }
+
+        async function findPath(map, start, end) {
+            queue.push(start);
+            map[start[0] * MAP_LENGTH + start[1]] = 2;
+            container.children[start[0] * MAP_LENGTH + start[1]].style.backgroundColor = 'green';
+            while (queue.length) {
+                let [x, y] = queue.shift();
+                if (x == end[0] && y == end[1]) {
+                    console.log('find end! ' + [x, y]);
+                    drawPath(start, end);
+                    return true;
+                }
+                await insert(map, [x + 1, y], [x, y]);
+                await insert(map, [x - 1, y], [x, y]);
+                await insert(map, [x, y + 1], [x, y]);
+                await insert(map, [x, y - 1], [x, y]);
+                await insert(map, [x + 1, y + 1], [x, y]);
+                await insert(map, [x + 1, y - 1], [x, y]);
+                await insert(map, [x - 1, y + 1], [x, y]);
+                await insert(map, [x - 1, y - 1], [x, y]);
+            }
+            return false;
+        }
+
+        async function insert(map, point, before) {
+            let [x, y] = point;
+            if (x >= MAP_LENGTH || x < 0) {
+                return;
+            }
+            if (y >= MAP_LENGTH || y < 0) {
+                return;
+            }
+            if (!map[x * MAP_LENGTH + y]) {
+                queue.push(point);
+                map[x * MAP_LENGTH + y] = before;
+                container.children[x * MAP_LENGTH + y].style.backgroundColor = 'green';
+                await sleep(10);
+            }
+        };
+
+        function sleep(time) {
+            return new Promise(function (resolve) {
+                setTimeout(resolve, time);
+            });
+        }
+
+        async function drawPath(start, end) {
+            let [x, y] = end;
+            while (!(x == start[0] && y == start[1])) {
+                container.children[x * MAP_LENGTH + y].style.backgroundColor = 'purple';
+                [x, y] = map[x * MAP_LENGTH + y];
+                await sleep(10);
+            }
+            container.children[x * MAP_LENGTH + y].style.backgroundColor = 'purple';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
