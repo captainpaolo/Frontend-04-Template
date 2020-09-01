@@ -75,40 +75,44 @@
                 return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
             }
             async function insert(map, point, before) {
+
+                function isCircle(point, before) {
+                    let [x, y] = point;
+                    let b_before = before;
+                    let circle = false;
+                    while (Array.isArray(b_before)) {
+                        if (b_before[0] == x && b_before[1] == y) {
+                            circle = true;
+                            break;
+                        }
+                        b_before = map[b_before[0] * MAP_LENGTH + b_before[1]]
+                    }
+                    return circle;
+                }
                 let [x, y] = point;
-                let [b_x, b_y] = before;
                 if (x >= MAP_LENGTH || x < 0) {
                     return;
                 }
                 if (y >= MAP_LENGTH || y < 0) {
                     return;
                 }
-                // if (Array.isArray(map[x * MAP_LENGTH + y])) {
-                //     // 已经有前置的一个点
-                //     let last = map[x * MAP_LENGTH + y];
-                //     if (distance(before) < distance(last)) {
-                //         // 新的前置点离目标更近
-                //         let b_before = map[b_x * MAP_LENGTH + b_y];
-                //         // 避免互相嵌套形成死循环
-                //         if (Array.isArray(b_before) && b_before[0] == x && b_before[1] == y) {
-                //             // 新的前置点的前置点是当前点，那么会形成死循环，pass
-                //             return;
-                //         }
-                //         // 避免互相嵌套形成死循环
-                //         if (last[0] == b_before[0] && last[1] == b_before[1]) {
-                //             // 旧的前置点是新的前置点的前置点，也会形成死循环
-                //             return;
-                //         }
-                //         map[x * MAP_LENGTH + y] = before;
-                //         console.log('replace ' + last + ' ===>' + before + ' ===at==== ' + point);
-                //         await sleep(10);
-                //     }
-                // }
+                if (Array.isArray(map[x * MAP_LENGTH + y])) {
+                    // 已经有前置的一个点
+                    let last = map[x * MAP_LENGTH + y];
+                    if (distance(before) < distance(last)) {
+                        // 避免互相嵌套形成死循环
+                        if (isCircle(point, before)) {
+                            // 新的前置点的前置点是当前点，那么会形成死循环，pass
+                            return;
+                        }
+                        map[x * MAP_LENGTH + y] = before;
+                        await sleep(10);
+                    }
+                }
                 if (!map[x * MAP_LENGTH + y]) {
                     queue.give(point);
                     map[x * MAP_LENGTH + y] = before;
                     container.children[x * MAP_LENGTH + y].style.backgroundColor = 'green';
-                    console.log('set ===>' + before + ' ===at==== ' + point);
                     await sleep(10);
                 }
             };
