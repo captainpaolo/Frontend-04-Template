@@ -116,7 +116,7 @@
                     await sleep(10);
                 }
             };
-            queue = new Sorted([start], (a, b) => {
+            queue = new BinaryHeap([start], (a, b) => {
                 return distance(a) - distance(b);
             })
             map[start[0] * MAP_LENGTH + start[1]] = 2;
@@ -159,14 +159,14 @@
             container.children[x * MAP_LENGTH + y].style.backgroundColor = 'purple';
         }
 
-        class Sorted {
+        class BinaryHeap {
             constructor(data, compare) {
                 this.data = data.slice();
                 this.compare = compare || ((a, b) => {
                     return a - b;
                 });
             };
-            swap(a,b) {
+            swap(a, b) {
                 // 交换数组两个位置的值
                 let tmp = this.data[a];
                 this.data[a] = this.data[b];
@@ -191,25 +191,24 @@
                 if (this.data.length === 1) {
                     // 只剩一个，直接Pop
                     this.data.pop();
-                }
-                else {
+                } else {
                     // 二叉堆
                     // 删除根节点，最后一个节点填充到根节点
                     this.data[0] = this.data.pop();
                     let index = 0;
-                    while(true) {
+                    while (true) {
                         // 找到左右节点
                         let sub_l_index = index * 2 + 1;
                         let sub_r_index = index * 2 + 2;
-                        if(sub_l_index > this.data.length - 1) {
+                        if (sub_l_index > this.data.length - 1) {
                             // 没有左右节点，已经是叶子节点，终止
                             break;
                         }
                         let left_diff = this.compare(this.data[index], this.data[sub_l_index]);
-                        if(sub_r_index <= this.data.length - 1) {
+                        if (sub_r_index <= this.data.length - 1) {
                             // 同时有左右节点
                             let right_diff = this.compare(this.data[index], this.data[sub_r_index]);
-                            if(left_diff < 0 && right_diff < 0) {
+                            if (left_diff < 0 && right_diff < 0) {
                                 // 比左右节点都小，停止下沉
                                 break;
                             } else if (left_diff > right_diff) {
@@ -225,7 +224,7 @@
                                 this.swap(index, sub_l_index);
                                 index = sub_l_index;
                             }
-                        } else if(left_diff > 0){
+                        } else if (left_diff > 0) {
                             // 只有左节点，同时比左节点更大，和左节点交换
                             this.swap(index, sub_l_index);
                             index = sub_l_index;
@@ -240,12 +239,12 @@
             give(v) {
                 function getParentIndex(index) {
                     // 找到父节点
-                    return index % 2 === 0 ?  (index-2)/2 : (index-1)/2;
+                    return index % 2 === 0 ? (index - 2) / 2 : (index - 1) / 2;
                 }
                 this.data.push(v);
                 let index = this.data.length - 1;
                 let parent_index = getParentIndex(index);
-                while (parent_index >= 0 && this.compare(this.data[index], this.data[parent_index]) < 0){
+                while (parent_index >= 0 && this.compare(this.data[index], this.data[parent_index]) < 0) {
                     // 如果比父节点小，则上浮
                     this.swap(parent_index, index);
                     index = parent_index;
