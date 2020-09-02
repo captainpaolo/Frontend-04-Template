@@ -97,12 +97,12 @@
                     return;
                 }
                 if (Array.isArray(map[x * MAP_LENGTH + y])) {
-                    // 已经有前置的一个点
+                    // 已经有前置的一个点，判断这个新的前置点是不是更好
                     let last = map[x * MAP_LENGTH + y];
                     if (distance(before) < distance(last)) {
-                        // 避免互相嵌套形成死循环
+                        // 新的前置点离终点更近
                         if (isCircle(point, before)) {
-                            // 新的前置点的前置点是当前点，那么会形成死循环，pass
+                            // 如果新的前置点的一直往前搜索前置点，到达当前点，那么会形成死循环，pass
                             return;
                         }
                         map[x * MAP_LENGTH + y] = before;
@@ -166,24 +166,91 @@
                     return a - b;
                 });
             };
+            swap(a,b) {
+                // 交换数组两个位置的值
+                let tmp = this.data[a];
+                this.data[a] = this.data[b];
+                this.data[b] = tmp;
+            }
             take() {
                 if (!this.data.length) {
                     return;
                 }
-                let min = this.data[0];
-                let minIndex = 0;
-                for (let i = 1; i < this.data.length; i++) {
-                    if (this.compare(this.data[i], min) < 0) {
-                        min = this.data[i];
-                        minIndex = i;
+                // let min = this.data[0];
+                // let minIndex = 0;
+                // for (let i = 1; i < this.data.length; i++) {
+                //     if (this.compare(this.data[i], min) < 0) {
+                //         min = this.data[i];
+                //         minIndex = i;
+                //     }
+                // }
+                // this.data[minIndex] = this.data[this.data.length - 1];
+                // this.data.pop();
+                // return min;
+                const min = this.data[0];
+                if (this.data.length === 1) {
+                    // 只剩一个，直接Pop
+                    this.data.pop();
+                }
+                else {
+                    // 删除根节点，最后一个节点填充到根节点
+                    this.data[0] = this.data.pop();
+                    let index = 0;
+                    while(true) {
+                        // 找到左右节点
+                        let sub_l_index = index * 2 + 1;
+                        let sub_r_index = index * 2 + 2;
+                        if(sub_l_index > this.data.length - 1) {
+                            // 没有左右节点，已经是叶子节点，终止
+                            break;
+                        }
+                        let left_diff = this.compare(this.data[index], this.data[sub_l_index]);
+                        if(sub_r_index <= this.data.length - 1) {
+                            // 同时有左右节点
+                            let right_diff = this.compare(this.data[index], this.data[sub_r_index]);
+                            if(left_diff < 0 && right_diff < 0) {
+                                // 比左右节点都小，停止下沉
+                                break;
+                            } else if (left_diff > right_diff) {
+                                // 左节点相对更小，和左节点交换
+                                this.swap(index, sub_l_index);
+                                index = sub_l_index;
+                            } else if (left_diff < right_diff) {
+                                // 右节点相对更小，和右节点交换
+                                this.swap(index, sub_r_index);
+                                index = sub_r_index;
+                            } else {
+                                // 左右节点一样大，交换左节点
+                                this.swap(index, sub_l_index);
+                                index = sub_l_index;
+                            }
+                        } else if(left_diff > 0){
+                            // 只有左节点，同时比左节点更大，和左节点交换
+                            this.swap(index, sub_l_index);
+                            index = sub_l_index;
+                        } else {
+                            // 只有左节点，同时比左节点更小，停止下沉
+                            break;
+                        }
                     }
                 }
-                this.data[minIndex] = this.data[this.data.length - 1];
-                this.data.pop();
                 return min;
             }
             give(v) {
+                function getParentIndex(index) {
+                    // 找到父节点
+                    return index % 2 === 0 ?  (index-2)/2 : (index-1)/2;
+                }
                 this.data.push(v);
+                let index = this.data.length - 1;
+                let parent_index = getParentIndex(index);
+                while (parent_index >= 0 && this.compare(this.data[index], this.data[parent_index]) < 0){
+                    // 如果比父节点小，则上浮
+                    this.swap(parent_index, index);
+                    index = parent_index;
+                    parent_index = getParentIndex(index);
+                }
+
             }
             length() {
                 return this.data.length;
