@@ -71,55 +71,45 @@
         }
 
         async function findPath(map, start, end) {
-            function distance(point) {
-                return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
-            }
             async function insert(map, point, before) {
-
-                function isCircle(point, before) {
-                    let [x, y] = point;
-                    let b_before = before;
-                    let circle = false;
-                    while (Array.isArray(b_before)) {
-                        if (b_before[0] == x && b_before[1] == y) {
-                            circle = true;
-                            break;
-                        }
-                        b_before = map[b_before[0] * MAP_LENGTH + b_before[1]]
-                    }
-                    return circle;
-                }
                 let [x, y] = point;
+                let [b_x, b_y] = before;
                 if (x >= MAP_LENGTH || x < 0) {
                     return;
                 }
                 if (y >= MAP_LENGTH || y < 0) {
                     return;
                 }
-                if (Array.isArray(map[x * MAP_LENGTH + y])) {
-                    // 已经有前置的一个点，判断这个新的前置点是不是更好
-                    let last = map[x * MAP_LENGTH + y];
-                    if (distance(before) < distance(last)) {
-                        // 新的前置点离终点更近
-                        if (isCircle(point, before)) {
-                            // 如果新的前置点的一直往前搜索前置点，到达当前点，那么会形成死循环，pass
-                            return;
-                        }
-                        map[x * MAP_LENGTH + y] = before;
-                        await sleep(10);
-                    }
-                }
+                let b_g = map[b_x * MAP_LENGTH + b_y].g;
                 if (!map[x * MAP_LENGTH + y]) {
+                    //A*算法  https://blog.csdn.net/weixin_44489823/article/details/89382502
+                    map[x * MAP_LENGTH + y] = {
+                        parent: before,
+                        g: b_g + 1,
+                        h: Math.abs(point[0] - end[0])  + Math.abs(point[1] - end[1])
+                    }
                     queue.give(point);
-                    map[x * MAP_LENGTH + y] = before;
                     container.children[x * MAP_LENGTH + y].style.backgroundColor = 'green';
                     await sleep(10);
+                } else if(map[x * MAP_LENGTH + y].parent){
+                    //A*算法 查找是否有更优质的前置点
+                    let g = map[x * MAP_LENGTH + y].g;
+                    if(b_g + 1 < g) {
+                        map[x * MAP_LENGTH + y].parent = before;
+                        map[x * MAP_LENGTH + y].g = b_g + 1;
+                        // point的值变小，在二插堆要做上浮处理
+                        queue.up(point);
+                    }
                 }
             };
             queue = new BinaryHeap([start], (a, b) => {
-                return distance(a) - distance(b);
+                let pointA = map[a[0] * MAP_LENGTH + a[1]];
+                let pointB = map[b[0] * MAP_LENGTH + b[1]];
+                return pointA.h + pointA.g - pointB.h - pointB.g;
             })
-            map[start[0] * MAP_LENGTH + start[1]] = 2;
+            map[start[0] * MAP_LENGTH + start[1]] = {
+                g: 0
+            };
             container.children[start[0] * MAP_LENGTH + start[1]].style.backgroundColor = 'green';
             while (queue.length()) {
                 let [x, y] = queue.take();
@@ -128,6 +118,7 @@
                     drawPath(start, end);
                     return true;
                 }
+                // A*算法
                 await insert(map, [x + 1, y], [x, y]);
                 await insert(map, [x - 1, y], [x, y]);
                 await insert(map, [x, y + 1], [x, y]);
@@ -151,9 +142,8 @@
         async function drawPath(start, end) {
             let [x, y] = end;
             while (!(x == start[0] && y == start[1])) {
-                console.log('draw ' + [x, y]);
                 container.children[x * MAP_LENGTH + y].style.backgroundColor = 'purple';
-                [x, y] = map[x * MAP_LENGTH + y];
+                [x, y] = map[x * MAP_LENGTH + y].parent;
                 await sleep(10);
             }
             container.children[x * MAP_LENGTH + y].style.backgroundColor = 'purple';
@@ -176,17 +166,6 @@
                 if (!this.data.length) {
                     return;
                 }
-                // let min = this.data[0];
-                // let minIndex = 0;
-                // for (let i = 1; i < this.data.length; i++) {
-                //     if (this.compare(this.data[i], min) < 0) {
-                //         min = this.data[i];
-                //         minIndex = i;
-                //     }
-                // }
-                // this.data[minIndex] = this.data[this.data.length - 1];
-                // this.data.pop();
-                // return min;
                 const min = this.data[0];
                 if (this.data.length === 1) {
                     // 只剩一个，直接Pop
@@ -236,21 +215,42 @@
                 }
                 return min;
             }
+            getParentIndex(index) {
+                // 找到父节点
+                return index % 2 === 0 ? (index - 2) / 2 : (index - 1) / 2;
+            }
             give(v) {
-                function getParentIndex(index) {
-                    // 找到父节点
-                    return index % 2 === 0 ? (index - 2) / 2 : (index - 1) / 2;
-                }
                 this.data.push(v);
                 let index = this.data.length - 1;
-                let parent_index = getParentIndex(index);
+                let parent_index = this.getParentIndex(index);
                 while (parent_index >= 0 && this.compare(this.data[index], this.data[parent_index]) < 0) {
                     // 如果比父节点小，则上浮
                     this.swap(parent_index, index);
                     index = parent_index;
-                    parent_index = getParentIndex(index);
+                    parent_index = this.getParentIndex(index);
                 }
 
+            }
+            up(v) {
+                // 节点的值减少，做上浮处理
+                let index = -1;
+                for(let i = 0;i < this.data.length; i++) {
+                    if(this.data[i][0] == v[0] && this.data[i][1] == v[1]) {
+                        index = i;
+                        break;
+                    }
+                }
+                if(index < 0) {
+                    return;
+                }
+                console.log('up',v,index);
+                let parent_index = this.getParentIndex(index);
+                while (parent_index >= 0 && this.compare(this.data[index], this.data[parent_index]) < 0) {
+                    // 如果比父节点小，则上浮
+                    this.swap(parent_index, index);
+                    index = parent_index;
+                    parent_index = this.getParentIndex(index);
+                }
             }
             length() {
                 return this.data.length;
