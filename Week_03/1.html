@@ -1,0 +1,51 @@
+<script>
+    const $ = Symbol('$')
+    class Trie {
+        constructor() {
+            this.root = Object.create(null);
+        }
+        insert(word) {
+            let node = this.root;
+            for (let c of word) {
+                if (!node[c]) {
+                    node[c] = Object.create(null);
+                }
+                node = node[c];
+            }
+            if (!node[$]) {
+                node[$] = 1;
+            } else {
+                node[$]++;
+            }
+        }
+        most() {
+            let maxNum = 0;
+            let maxWord = '';
+            let visit = (node, word) => {
+                if (node[$] && node[$] > maxNum) {
+                    maxNum = node[$];
+                    maxWord = word;
+                }
+                for (let p in node) {
+                    if (typeof p !== 'symbol') {
+                        visit(node[p], word + p)
+                    }
+                }
+            }
+            visit(this.root, '');
+            console.log(maxWord, maxNum);
+        }
+    }
+
+    function generateWord(length) {
+        let s = '';
+        for (let i = 0; i < length; i++) {
+            s += String.fromCharCode(Math.random() * 26 + "a".charCodeAt(0));
+        }
+        return s;
+    }
+    let trie = new Trie();
+    for (let i = 0; i < 10000; i++) {
+        trie.insert(generateWord(4));
+    }
+</script>
