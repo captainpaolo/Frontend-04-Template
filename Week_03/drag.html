@@ -1,4 +1,12 @@
-<div id="dragabal" style="width: 100px;height: 100px; background-color: blue;"></div>
+<div id="container">Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text Text
+    Text Text Text Text Text Text Text Text Text Text Text Text</div>
+<div id="dragabal" style="display:inline-block;width: 100px;height: 100px; background-color: blue;"></div>
 <script>
     const dragable = document.getElementById("dragabal");
     let baseX = 0,
@@ -17,11 +25,37 @@
         }
         let move = (event) => {
             console.log('move');
-            dragable.style.transform =
-                `translate(${baseX + event.clientX - startX}px,${baseY + event.clientY - startY}px)`
+            let range = getNearest(event.clientX, event.clientY);
+            range.insertNode(dragable);
+            // dragable.style.transform =
+            //     `translate(${baseX + event.clientX - startX}px,${baseY + event.clientY - startY}px)`
         }
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', up);
 
     });
+
+    let ranges = [];
+    let container = document.getElementById('container');
+    for (let i = 0; i < container.childNodes[0].length; i++) {
+        let range = document.createRange();
+        range.setStart(container.childNodes[0], i);
+        range.setEnd(container.childNodes[0], i);
+        ranges.push(range);
+    }
+
+    function getNearest(x, y) {
+        let neareset = null;
+        let distance = Infinity;
+        for (let range of ranges) {
+            let rect = range.getBoundingClientRect();
+            let dis = (rect.x - x) ** 2 + (rect.y - y) ** 2;
+            if (dis < distance) {
+                distance = dis;
+                neareset = range;
+            }
+        }
+        return neareset;
+    }
+    document.addEventListener('selectstart', event => event.preventDefault());
 </script>
